@@ -199,11 +199,19 @@ app/
 
 ### Data Model
 
-- **Character** - Rick & Morty characters with external ID mapping
-- **Episode** - TV episodes with episode codes (S01E01)
-- **Location** - Planets, dimensions, and other locations
-- **CharacterEpisode** - Many-to-many relationship
-- **CharacterFavorite** - User's favorite characters
+| Entity | Description | Key Fields |
+|--------|-------------|------------|
+| **Character** | Rick & Morty characters | external_id, name, status, species, gender, image |
+| **Episode** | TV episodes with codes | external_id, name, air_date, episode_code (S01E01) |
+| **Location** | Planets, dimensions | external_id, name, type, dimension |
+| **CharacterEpisode** | N:M pivot | character_id, episode_id |
+| **CharacterFavorite** | User favorites | user_id, character_id |
+
+**Relationships:**
+- Character ↔ Episode (many-to-many via `character_episode`)
+- Character → Location (origin + current location FKs)
+- Location ← Character (residents via `current_location_id`)
+- User → Character (favorites via `character_favorites`)
 
 ### Design Decisions
 
