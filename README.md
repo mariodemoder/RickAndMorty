@@ -1,5 +1,7 @@
 # Rick & Morty API Integration
 
+> **Prueba técnica de Mario Alejandro Muñoz Merli para Quental.**
+
 Backend API built with Laravel 12 that integrates with the [Rick and Morty API](https://rickandmortyapi.com), synchronizes data locally, and provides a custom API with user authentication and favorites management.
 
 ## Requirements
