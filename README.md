@@ -103,6 +103,19 @@ This command:
 - Synchronizes data to your local database
 - Is idempotent (safe to run multiple times)
 - Handles pagination automatically
+- Logs progress to `storage/logs/sync.log` and to the database (`sync_logs` table)
+
+### View Sync Logs
+
+```bash
+# From terminal (log file)
+tail -50 storage/logs/sync.log
+
+# From tinker (database)
+php artisan tinker
+>>> \App\Models\SyncLog::latest()->first();
+>>> \App\Models\SyncLog::latest()->first()->entries;
+```
 
 ### Run Tests
 
@@ -149,6 +162,13 @@ php artisan test
 | GET    | /api/favorites         | List favorites    | Yes           |
 | DELETE | /api/favorites/{id}    | Remove favorite   | Yes           |
 
+### Sync Logs
+
+| Method | Endpoint               | Description       | Auth Required |
+|--------|------------------------|-------------------|---------------|
+| GET    | /api/sync/logs         | List sync runs    | No            |
+| GET    | /api/sync/logs/{id}    | Sync run details  | No            |
+
 ### Response Format
 
 **Success:**
@@ -180,7 +200,7 @@ php artisan test
 
 ```
 app/
-├── Console/Commands/        # Artisan commands
+├── Console/Commands/        # Artisan commands (sync:rick-and-morty)
 ├── Enums/                   # PHP Enums for type safety
 ├── Http/
 │   ├── Controllers/         # API controllers
@@ -188,13 +208,14 @@ app/
 │   │   └── Api/             # API resource controllers
 │   ├── Requests/            # Form request validation
 │   └── Resources/           # API resources for response formatting
-├── Models/                  # Eloquent models
+├── Models/                  # Eloquent models (SyncLog, SyncLogEntry, ...)
+├── Providers/               # Service providers
 └── Services/
     └── RickAndMorty/        # External API integration
-        ├── Client.php       # HTTP client
+        ├── Client.php       # HTTP client with retry & validation
         ├── DTOs/            # Data Transfer Objects
         ├── Exceptions/      # Custom exceptions
-        └── Helpers/         # Helper functions
+        └── Helpers/         # Helper functions (UrlHelper)
 ```
 
 ### Data Model
@@ -206,6 +227,8 @@ app/
 | **Location** | Planets, dimensions | external_id, name, type, dimension |
 | **CharacterEpisode** | N:M pivot | character_id, episode_id |
 | **CharacterFavorite** | User favorites | user_id, character_id |
+| **SyncLog** | Sync execution records | status, started_at, finished_at, counts |
+| **SyncLogEntry** | Detailed sync log lines | sync_log_id, level, message, context |
 
 **Relationships:**
 - Character ↔ Episode (many-to-many via `character_episode`)
@@ -221,7 +244,11 @@ app/
 
 3. **Idempotent Sync**: The sync command uses `updateOrCreate` to ensure running it multiple times doesn't create duplicates.
 
-4. **Stateless API**: API endpoints follow REST conventions with proper HTTP status codes and consistent error responses.
+4. **Idempotent Sync**: The sync command uses `updateOrCreate` to ensure running it multiple times doesn't create duplicates.
+
+5. **Dual Logging**: Sync operations log to both `storage/logs/sync.log` (file) and `sync_logs`/`sync_log_entries` tables (database), enabling both terminal and frontend monitoring.
+
+6. **Stateless API**: API endpoints follow REST conventions with proper HTTP status codes and consistent error responses.
 
 ## License
 
