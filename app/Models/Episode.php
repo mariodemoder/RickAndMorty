@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
@@ -17,5 +18,15 @@ class Episode extends Model
     public function characters(): BelongsToMany
     {
         return $this->belongsToMany(Character::class);
+    }
+
+    public function scopeByName(Builder $query, ?string $name): Builder
+    {
+        return $name ? $query->where('name', 'like', "%{$name}%") : $query;
+    }
+
+    public function scopeByEpisodeCode(Builder $query, ?string $episode): Builder
+    {
+        return $episode ? $query->where('episode_code', 'like', "%{$episode}%") : $query;
     }
 }
