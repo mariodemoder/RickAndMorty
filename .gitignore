@@ -37,3 +37,8 @@ Homestead.yaml
 
 # Logs
 *.log
+
+# Private docs
+spec-technical-test.md
+phases.md
+manual-tecnico.md
