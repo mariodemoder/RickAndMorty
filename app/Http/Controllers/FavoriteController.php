@@ -41,7 +41,7 @@ class FavoriteController extends Controller
             ->where('character_id', $id)
             ->delete();
 
-        if (!$deleted) {
+        if (! $deleted) {
             return response()->json([
                 'error' => [
                     'message' => 'Favorite not found.',

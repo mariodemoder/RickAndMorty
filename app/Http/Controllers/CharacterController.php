@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\FilterCharacterRequest;
 use App\Http\Resources\CharacterResource;
 use App\Models\Character;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class CharacterController extends Controller
