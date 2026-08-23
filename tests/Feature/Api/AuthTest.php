@@ -114,7 +114,7 @@ class AuthTest extends TestCase
         $user = User::factory()->create();
         $token = $user->createToken('auth-token')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/logout');
 
         $response->assertOk()
