@@ -8,14 +8,4 @@ enum CharacterGender: string
     case Male = 'Male';
     case Genderless = 'Genderless';
     case Unknown = 'unknown';
-
-    public function label(): string
-    {
-        return match ($this) {
-            self::Female => 'Female',
-            self::Male => 'Male',
-            self::Genderless => 'Genderless',
-            self::Unknown => 'Unknown',
-        };
-    }
 }

@@ -23,11 +23,6 @@ class Location extends Model
         return $this->hasMany(Character::class, 'current_location_id');
     }
 
-    public function charactersAsOrigin(): HasMany
-    {
-        return $this->hasMany(Character::class, 'origin_location_id');
-    }
-
     public function scopeByName(Builder $query, ?string $name): Builder
     {
         return $name ? $query->where('name', 'like', "%{$name}%") : $query;
