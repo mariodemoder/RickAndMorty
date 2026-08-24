@@ -1,0 +1,1372 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Rick & Morty API",
+        "description": "API para consultar datos sincronizados de la API externa de Rick & Morty. Incluye autenticación, CRUD de favoritos, y consulta de personajes, episodios y localizaciones.",
+        "contact": {
+            "name": "Quental",
+            "email": "dev@quental.com"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8080",
+            "description": "Servidor de desarrollo (Laravel Sail)"
+        }
+    ],
+    "paths": {
+        "/api/register": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Registrar nuevo usuario",
+                "description": "Crea una cuenta nueva y retorna el usuario junto con un token de autenticación.",
+                "operationId": "register",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "password",
+                                    "password_confirmation"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Rick Sanchez",
+                                        "maxLength": 255
+                                    },
+                                    "email": {
+                                        "description": "Debe ser único en la tabla users",
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "rick@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "password123",
+                                        "minLength": 8
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "example": "password123",
+                                        "minLength": 8
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Usuario registrado exitosamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "user": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Rick Sanchez"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "example": "rick@example.com"
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "token": {
+                                            "type": "string",
+                                            "example": "1|abc123..."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Error de validación",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Iniciar sesión",
+                "description": "Autentica un usuario y retorna un token de acceso.",
+                "operationId": "login",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "rick@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "password123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login exitoso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "user": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Rick Sanchez"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "example": "rick@example.com"
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "token": {
+                                            "type": "string",
+                                            "example": "1|abc123..."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Credenciales inválidas",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/logout": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Cerrar sesión",
+                "description": "Invalida el token de autenticación actual.",
+                "operationId": "logout",
+                "responses": {
+                    "200": {
+                        "description": "Logout exitoso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Logged out successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/characters": {
+            "get": {
+                "tags": [
+                    "Characters"
+                ],
+                "summary": "Listar personajes",
+                "description": "Obtiene un listado paginado de personajes con filtros opcionales.",
+                "operationId": "listCharacters",
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "query",
+                        "description": "Filtro por nombre (búsqueda parcial)",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "rick"
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filtro por estado",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "Alive",
+                                "Dead",
+                                "unknown"
+                            ]
+                        },
+                        "example": "Alive"
+                    },
+                    {
+                        "name": "species",
+                        "in": "query",
+                        "description": "Filtro por especie (búsqueda parcial)",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Human"
+                    },
+                    {
+                        "name": "gender",
+                        "in": "query",
+                        "description": "Filtro por género",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "Female",
+                                "Male",
+                                "Genderless",
+                                "unknown"
+                            ]
+                        },
+                        "example": "Male"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Número de página",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Listado de personajes (Resource collection)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Character"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "example": 42
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "example": 20
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 826
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/characters/{id}": {
+            "get": {
+                "tags": [
+                    "Characters"
+                ],
+                "summary": "Detalle de personaje",
+                "description": "Obtiene el detalle completo de un personaje, incluyendo ubicaciones y episodios.",
+                "operationId": "getCharacter",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID interno del personaje",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Detalle del personaje",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Character"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Personaje no encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/episodes": {
+            "get": {
+                "tags": [
+                    "Episodes"
+                ],
+                "summary": "Listar episodios",
+                "description": "Obtiene un listado paginado de episodios con filtros opcionales.",
+                "operationId": "listEpisodes",
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "query",
+                        "description": "Filtro por nombre (búsqueda parcial)",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "pilot"
+                    },
+                    {
+                        "name": "episode",
+                        "in": "query",
+                        "description": "Filtro por código de episodio (S01E01)",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 10
+                        },
+                        "example": "S01E01"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Número de página",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Listado de episodios (Resource collection)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Episode"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "example": 3
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "example": 20
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 51
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/episodes/{id}": {
+            "get": {
+                "tags": [
+                    "Episodes"
+                ],
+                "summary": "Detalle de episodio",
+                "description": "Obtiene el detalle completo de un episodio, incluyendo personajes.",
+                "operationId": "getEpisode",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID interno del episodio",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Detalle del episodio",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Episode"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Episodio no encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/favorites": {
+            "get": {
+                "tags": [
+                    "Favorites"
+                ],
+                "summary": "Listar favoritos",
+                "description": "Obtiene los personajes favoritos del usuario autenticado.",
+                "operationId": "listFavorites",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Número de página",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Listado de favoritos (Resource collection)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Character"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "example": 20
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 5
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Favorites"
+                ],
+                "summary": "Añadir personaje a favoritos",
+                "description": "Añade un personaje a la lista de favoritos del usuario autenticado.",
+                "operationId": "addFavorite",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "character_id"
+                                ],
+                                "properties": {
+                                    "character_id": {
+                                        "description": "ID del personaje (debe existir en la tabla characters)",
+                                        "type": "integer",
+                                        "example": 1
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Favorito añadido exitosamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Favorite added successfully."
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Character"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Error de validación",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/favorites/{id}": {
+            "delete": {
+                "tags": [
+                    "Favorites"
+                ],
+                "summary": "Eliminar favorito",
+                "description": "Elimina un personaje de la lista de favoritos del usuario autenticado.",
+                "operationId": "removeFavorite",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del personaje",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Favorito eliminado exitosamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Favorite removed successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Favorito no encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/locations": {
+            "get": {
+                "tags": [
+                    "Locations"
+                ],
+                "summary": "Listar localizaciones",
+                "description": "Obtiene un listado paginado de localizaciones con filtros opcionales.",
+                "operationId": "listLocations",
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "query",
+                        "description": "Filtro por nombre (búsqueda parcial)",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "earth"
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "description": "Filtro por tipo (búsqueda parcial)",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Planet"
+                    },
+                    {
+                        "name": "dimension",
+                        "in": "query",
+                        "description": "Filtro por dimensión (búsqueda parcial)",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "Dimension C-137"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Número de página",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Listado de localizaciones (Resource collection)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Location"
+                                            }
+                                        },
+                                        "meta": {
+                                            "properties": {
+                                                "current_page": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "last_page": {
+                                                    "type": "integer",
+                                                    "example": 7
+                                                },
+                                                "per_page": {
+                                                    "type": "integer",
+                                                    "example": 20
+                                                },
+                                                "total": {
+                                                    "type": "integer",
+                                                    "example": 126
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/locations/{id}": {
+            "get": {
+                "tags": [
+                    "Locations"
+                ],
+                "summary": "Detalle de localización",
+                "description": "Obtiene el detalle completo de una localización, incluyendo residentes.",
+                "operationId": "getLocation",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID interno de la localización",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Detalle de la localización",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Location"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Localización no encontrada",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/sync/logs": {
+            "get": {
+                "tags": [
+                    "Sync Logs"
+                ],
+                "summary": "Listar logs de sincronización",
+                "description": "Obtiene un listado paginado de ejecuciones de sincronización. El formato de paginación es de Laravel.paginator (campos en raíz, no en `meta`).",
+                "operationId": "listSyncLogs",
+                "parameters": [
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Elementos por página",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Número de página",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Listado de logs de sincronización (paginator)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/SyncLog"
+                                            }
+                                        },
+                                        "current_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "last_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "per_page": {
+                                            "type": "integer",
+                                            "example": 15
+                                        },
+                                        "total": {
+                                            "type": "integer",
+                                            "example": 10
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/sync/logs/{syncLog}": {
+            "get": {
+                "tags": [
+                    "Sync Logs"
+                ],
+                "summary": "Detalle de log de sincronización",
+                "description": "Obtiene el detalle completo de una ejecución de sincronización, incluyendo entries.",
+                "operationId": "getSyncLog",
+                "parameters": [
+                    {
+                        "name": "syncLog",
+                        "in": "path",
+                        "description": "ID del log de sincronización",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Detalle del log de sincronización",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SyncLog"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Log no encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Character": {
+                "required": [
+                    "id",
+                    "external_id",
+                    "name",
+                    "status",
+                    "species",
+                    "gender",
+                    "image"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "external_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Rick Sanchez"
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "Alive",
+                        "enum": [
+                            "Alive",
+                            "Dead",
+                            "unknown"
+                        ]
+                    },
+                    "species": {
+                        "type": "string",
+                        "example": "Human"
+                    },
+                    "type": {
+                        "type": "string",
+                        "example": "",
+                        "nullable": true
+                    },
+                    "gender": {
+                        "type": "string",
+                        "example": "Male",
+                        "enum": [
+                            "Female",
+                            "Male",
+                            "Genderless",
+                            "unknown"
+                        ]
+                    },
+                    "image": {
+                        "type": "string",
+                        "format": "uri",
+                        "example": "https://rickandmortyapi.com/api/character/avatar/1.jpeg"
+                    },
+                    "origin": {
+                        "$ref": "#/components/schemas/Location"
+                    },
+                    "location": {
+                        "$ref": "#/components/schemas/Location"
+                    },
+                    "episodes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Episode"
+                        }
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "Episode": {
+                "required": [
+                    "id",
+                    "external_id",
+                    "name",
+                    "air_date",
+                    "episode_code"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "external_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Pilot"
+                    },
+                    "air_date": {
+                        "type": "string",
+                        "example": "December 2, 2013"
+                    },
+                    "episode_code": {
+                        "type": "string",
+                        "example": "S01E01"
+                    },
+                    "characters": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Character"
+                        }
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "Location": {
+                "required": [
+                    "id",
+                    "external_id",
+                    "name",
+                    "type",
+                    "dimension"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "external_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Earth (C-137)"
+                    },
+                    "type": {
+                        "type": "string",
+                        "example": "Planet"
+                    },
+                    "dimension": {
+                        "type": "string",
+                        "example": "Dimension C-137"
+                    },
+                    "residents": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Character"
+                        }
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "SyncLog": {
+                "required": [
+                    "id",
+                    "status",
+                    "locations_count",
+                    "episodes_count",
+                    "characters_count",
+                    "created_at",
+                    "updated_at"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "completed",
+                        "enum": [
+                            "queued",
+                            "running",
+                            "completed",
+                            "failed"
+                        ]
+                    },
+                    "batch_id": {
+                        "type": "string",
+                        "example": "batch-123",
+                        "nullable": true
+                    },
+                    "started_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "finished_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "locations_count": {
+                        "type": "integer",
+                        "example": 126
+                    },
+                    "episodes_count": {
+                        "type": "integer",
+                        "example": 51
+                    },
+                    "characters_count": {
+                        "type": "integer",
+                        "example": 826
+                    },
+                    "error_message": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "entries": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SyncLogEntry"
+                        }
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "SyncLogEntry": {
+                "required": [
+                    "id",
+                    "sync_log_id",
+                    "level",
+                    "message",
+                    "created_at"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "sync_log_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "level": {
+                        "type": "string",
+                        "example": "info",
+                        "enum": [
+                            "info",
+                            "warning",
+                            "error"
+                        ]
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Locations page 1/7: 20 synced"
+                    },
+                    "context": {
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "ErrorResponse": {
+                "required": [
+                    "error"
+                ],
+                "properties": {
+                    "error": {
+                        "required": [
+                            "message",
+                            "status"
+                        ],
+                        "properties": {
+                            "message": {
+                                "type": "string",
+                                "example": "Not found"
+                            },
+                            "status": {
+                                "type": "integer",
+                                "example": 404
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "ValidationErrorResponse": {
+                "required": [
+                    "message",
+                    "errors"
+                ],
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "example": "The given data was invalid."
+                    },
+                    "errors": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "example": [
+                                "The email field is required."
+                            ]
+                        }
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "sanctum": {
+                "type": "http",
+                "description": "Token de autenticación obtenido vía POST /api/login o POST /api/register",
+                "bearerFormat": "Sanctum Token",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Auth",
+            "description": "Registro, login y logout de usuarios"
+        },
+        {
+            "name": "Characters",
+            "description": "Consulta de personajes"
+        },
+        {
+            "name": "Episodes",
+            "description": "Consulta de episodios"
+        },
+        {
+            "name": "Locations",
+            "description": "Consulta de localizaciones"
+        },
+        {
+            "name": "Favorites",
+            "description": "Gestión de favoritos (autenticado)"
+        },
+        {
+            "name": "Sync Logs",
+            "description": "Logs de sincronización con la API externa"
+        }
+    ]
+}
