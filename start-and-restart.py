@@ -2,6 +2,7 @@ import subprocess
 import sys
 import time
 import os
+from datetime import date
 
 # Config
 CONTAINER_LARAVEL = "quental-laravel.test-1"
@@ -27,6 +28,48 @@ def run(cmd, capture=False):
     return subprocess.run(
         cmd, shell=True, capture_output=capture, text=True
     )
+
+# docker daemon verification
+def close_all_shells():
+    log(YELLOW, "STEP 0", "Cerrando consolas shell abiertas...")
+    run("taskkill /F /IM cmd.exe >nul 2>&1")
+    time.sleep(1)
+    log(GREEN, "OK", "Consolas cerradas.")
+
+
+def ensure_docker_running():
+    result = run("docker info", capture=True)
+    if result.returncode == 0:
+        log(GREEN, "DOCKER", "Docker ya está corriendo.")
+        return
+
+    docker_desktop = os.path.expandvars(
+        r"%ProgramFiles%\Docker\Docker\Docker Desktop.exe"
+    )
+    if not os.path.exists(docker_desktop):
+        log(RED, "ERROR", f"No se encontró Docker Desktop en: {docker_desktop}")
+        sys.exit(1)
+
+    log(YELLOW, "DOCKER", "Iniciando Docker Desktop...")
+    subprocess.Popen(
+        [docker_desktop],
+        creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW,
+    )
+
+    log(YELLOW, "WAIT", "Esperando a que Docker esté listo...")
+    start = time.time()
+    while time.time() - start < HEALTH_TIMEOUT:
+        result = run("docker info", capture=True)
+        if result.returncode == 0:
+            print()
+            log(GREEN, "OK", "Docker está listo.")
+            return
+        print(".", end="", flush=True)
+        time.sleep(HEALTH_INTERVAL)
+
+    print()
+    log(RED, "FAIL", "Timeout esperando Docker Desktop.")
+    sys.exit(1)
 
 
 def wait_container(container, condition, label):
@@ -57,6 +100,9 @@ def main():
     print(f"\n{CYAN}{BOLD}{'='*50}")
     print(f"  START AND RESTART - Laravel Sail")
     print(f"{'='*50}{RESET}\n")
+    
+    close_all_shells()
+    ensure_docker_running()
 
     # 1. docker compose down
     log(YELLOW, "STEP 1", "Deteniendo containers existentes...")
@@ -89,17 +135,26 @@ def main():
         sys.exit(1)
     log(GREEN, "OK", "Dependencias instaladas.\n")
 
-    # 6. npm run dev en foreground
-    log(YELLOW, "STEP 6", "Iniciando Vite...\n")
+    # 6. Iniciar queue:work, tail -f de logs y npm run dev
+    log(YELLOW, "STEP 6", "Iniciando queue:work, sync logs y Vite...\n")
+
+    os.system(f'start "Queue Worker" cmd /k "docker exec -it {CONTAINER_LARAVEL} php artisan queue:work --sleep=1 --tries=3 --verbose"')
+
+    sync_log = f"storage/logs/sync-{date.today()}.log"
+    os.system(f'start "Sync Logs" cmd /k "docker exec -it {CONTAINER_LARAVEL} tail -f {sync_log}"')
+
+    vite_proc = subprocess.Popen(
+        f"docker exec -it {CONTAINER_LARAVEL} npm run dev",
+        shell=True,
+    )
+
     try:
-        proc = subprocess.Popen(
-            f"docker exec -it {CONTAINER_LARAVEL} npm run dev",
-            shell=True,
-        )
-        proc.wait()
+        vite_proc.wait()
     except KeyboardInterrupt:
         pass
     finally:
+        vite_proc.terminate()
+        vite_proc.wait()
         print()
         log(YELLOW, "STOP", "Deteniendo containers...")
         run("docker compose down")

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Bus;
 
 class SyncLog extends Model
 {
@@ -12,6 +13,7 @@ class SyncLog extends Model
 
     protected $fillable = [
         'status',
+        'batch_id',
         'started_at',
         'finished_at',
         'locations_count',
@@ -38,6 +40,11 @@ class SyncLog extends Model
         return $this->status === 'running';
     }
 
+    public function isQueued(): bool
+    {
+        return $this->status === 'queued';
+    }
+
     public function isCompleted(): bool
     {
         return $this->status === 'completed';
@@ -46,6 +53,15 @@ class SyncLog extends Model
     public function isFailed(): bool
     {
         return $this->status === 'failed';
+    }
+
+    public function batch()
+    {
+        if (! $this->batch_id) {
+            return null;
+        }
+
+        return Bus::findBatch($this->batch_id);
     }
 
     public function duration(): ?float

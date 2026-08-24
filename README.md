@@ -95,26 +95,38 @@ php artisan migrate
 ### Sync Data from Rick & Morty API
 
 ```bash
+# Dispatch async sync (runs in background via queue)
 php artisan sync:rick-and-morty
+
+# Start the queue worker to process jobs
+php artisan queue:work --sleep=1 --tries=3 --verbose
 ```
 
 This command:
+- Dispatches an async job batch to the queue
 - Downloads all characters (826), locations (126), and episodes (51)
-- Synchronizes data to your local database
+- Processes locations → episodes → characters in parallel (3 jobs)
 - Is idempotent (safe to run multiple times)
 - Handles pagination automatically
-- Logs progress to `storage/logs/sync.log` and to the database (`sync_logs` table)
+- Retries failed jobs up to 3 times with exponential backoff
+- Logs progress to `storage/logs/sync-YYYY-MM-DD.log` and to the database (`sync_logs` table)
 
 ### View Sync Logs
 
 ```bash
+# Real-time log monitoring (terminal)
+tail -f storage/logs/sync-*.log
+
 # From terminal (log file)
-tail -50 storage/logs/sync.log
+tail -50 storage/logs/sync-$(date +%Y-%m-%d).log
 
 # From tinker (database)
 php artisan tinker
 >>> \App\Models\SyncLog::latest()->first();
 >>> \App\Models\SyncLog::latest()->first()->entries;
+
+# Check failed jobs
+php artisan queue:failed
 ```
 
 ### Run Tests
@@ -208,6 +220,11 @@ app/
 │   │   └── Api/             # API resource controllers
 │   ├── Requests/            # Form request validation
 │   └── Resources/           # API resources for response formatting
+├── Jobs/                    # Async queue jobs
+│   ├── SyncDispatcherJob.php    # Orchestrates the sync batch
+│   ├── SyncLocationsJob.php     # Syncs locations (3 tries, 180s timeout)
+│   ├── SyncEpisodesJob.php      # Syncs episodes (3 tries, 120s timeout)
+│   └── SyncCharactersJob.php    # Syncs characters + pivot (3 tries, 300s timeout)
 ├── Models/                  # Eloquent models (SyncLog, SyncLogEntry, ...)
 ├── Providers/               # Service providers
 └── Services/
@@ -244,9 +261,9 @@ app/
 
 3. **Idempotent Sync**: The sync command uses `updateOrCreate` to ensure running it multiple times doesn't create duplicates.
 
-4. **Idempotent Sync**: The sync command uses `updateOrCreate` to ensure running it multiple times doesn't create duplicates.
+4. **Async Job Batching**: The sync runs as a batch of 3 parallel jobs via Laravel's `Bus::batch()`, with automatic retries (3 tries, exponential backoff) and partial failure handling. Each job uses the `Batchable` trait for batch coordination.
 
-5. **Dual Logging**: Sync operations log to both `storage/logs/sync.log` (file) and `sync_logs`/`sync_log_entries` tables (database), enabling both terminal and frontend monitoring.
+5. **Dual Logging**: Sync operations log to both `storage/logs/sync-YYYY-MM-DD.log` (file) and `sync_logs`/`sync_log_entries` tables (database), enabling both terminal and frontend monitoring.
 
 6. **Stateless API**: API endpoints follow REST conventions with proper HTTP status codes and consistent error responses.
 
