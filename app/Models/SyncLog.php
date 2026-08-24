@@ -33,4 +33,9 @@ class SyncLog extends Model
     {
         return $this->hasMany(SyncLogEntry::class);
     }
+
+    public function rawResponses(): HasMany
+    {
+        return $this->hasMany(SyncRawResponse::class);
+    }
 }

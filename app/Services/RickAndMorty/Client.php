@@ -38,21 +38,30 @@ class Client
     {
         $response = $this->request('character', ['page' => $page]);
 
-        return $this->validatePaginatedResponse($response);
+        return [
+            'raw' => $response['raw'],
+            'data' => $this->validatePaginatedResponse($response['data']),
+        ];
     }
 
     public function getLocations(int $page = 1): array
     {
         $response = $this->request('location', ['page' => $page]);
 
-        return $this->validatePaginatedResponse($response);
+        return [
+            'raw' => $response['raw'],
+            'data' => $this->validatePaginatedResponse($response['data']),
+        ];
     }
 
     public function getEpisodes(int $page = 1): array
     {
         $response = $this->request('episode', ['page' => $page]);
 
-        return $this->validatePaginatedResponse($response);
+        return [
+            'raw' => $response['raw'],
+            'data' => $this->validatePaginatedResponse($response['data']),
+        ];
     }
 
     public function fetchAllCharacters(): Collection
@@ -74,21 +83,21 @@ class Client
     {
         $response = $this->request("character/{$id}", [], false);
 
-        return CharacterData::fromApi($response);
+        return CharacterData::fromApi($response['data']);
     }
 
     public function getEpisode(int $id): EpisodeData
     {
         $response = $this->request("episode/{$id}", [], false);
 
-        return EpisodeData::fromApi($response);
+        return EpisodeData::fromApi($response['data']);
     }
 
     public function getLocation(int $id): LocationData
     {
         $response = $this->request("location/{$id}", [], false);
 
-        return LocationData::fromApi($response);
+        return LocationData::fromApi($response['data']);
     }
 
     protected function request(string $endpoint, array $params = [], bool $expectPaginated = true): array
@@ -107,7 +116,10 @@ class Client
 
             $this->validateResponse($response, $expectPaginated);
 
-            return $response->json();
+            return [
+                'raw' => $response->body(),
+                'data' => $response->json(),
+            ];
         });
     }
 
@@ -147,7 +159,7 @@ class Client
 
         while ($hasMorePages) {
             $response = $this->request($resource, ['page' => $page]);
-            $validated = $this->validatePaginatedResponse($response);
+            $validated = $this->validatePaginatedResponse($response['data']);
 
             foreach ($validated['results'] as $item) {
                 $results->push($dtoClass::fromApi($item));

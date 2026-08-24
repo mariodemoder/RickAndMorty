@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Episode;
 use App\Models\SyncLog;
+use App\Models\SyncRawResponse;
 use App\Services\RickAndMorty\Client;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
@@ -39,8 +40,17 @@ class SyncEpisodesJob implements ShouldQueue
 
         while ($hasMorePages) {
             $response = $client->getEpisodes($page);
-            $items = $response['results'];
-            $totalPages = $response['info']['pages'];
+            $items = $response['data']['results'];
+            $totalPages = $response['data']['info']['pages'];
+
+            SyncRawResponse::create([
+                'sync_log_id' => $this->syncLog->id,
+                'resource_type' => 'episode',
+                'page_number' => $page,
+                'total_pages' => $totalPages,
+                'response_body' => gzcompress($response['raw'], 6),
+                'items_count' => count($items),
+            ]);
 
             DB::transaction(function () use ($items) {
                 foreach ($items as $item) {

@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Character;
 use App\Models\Episode;
 use App\Models\SyncLog;
+use App\Models\SyncRawResponse;
 use App\Services\RickAndMorty\Client;
 use App\Services\RickAndMorty\Helpers\UrlHelper;
 use Illuminate\Bus\Batchable;
@@ -41,8 +42,17 @@ class SyncCharactersJob implements ShouldQueue
 
         while ($hasMorePages) {
             $response = $client->getCharacters($page);
-            $items = $response['results'];
-            $totalPages = $response['info']['pages'];
+            $items = $response['data']['results'];
+            $totalPages = $response['data']['info']['pages'];
+
+            SyncRawResponse::create([
+                'sync_log_id' => $this->syncLog->id,
+                'resource_type' => 'character',
+                'page_number' => $page,
+                'total_pages' => $totalPages,
+                'response_body' => gzcompress($response['raw'], 6),
+                'items_count' => count($items),
+            ]);
 
             DB::transaction(function () use ($items) {
                 foreach ($items as $item) {

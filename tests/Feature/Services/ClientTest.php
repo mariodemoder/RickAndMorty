@@ -49,11 +49,13 @@ class ClientTest extends TestCase
 
         $result = $this->client->getCharacters(1);
 
-        $this->assertArrayHasKey('info', $result);
-        $this->assertArrayHasKey('results', $result);
-        $this->assertEquals(826, $result['info']['count']);
-        $this->assertCount(1, $result['results']);
-        $this->assertEquals('Rick Sanchez', $result['results'][0]['name']);
+        $this->assertArrayHasKey('raw', $result);
+        $this->assertArrayHasKey('data', $result);
+        $this->assertArrayHasKey('info', $result['data']);
+        $this->assertArrayHasKey('results', $result['data']);
+        $this->assertEquals(826, $result['data']['info']['count']);
+        $this->assertCount(1, $result['data']['results']);
+        $this->assertEquals('Rick Sanchez', $result['data']['results'][0]['name']);
     }
 
     public function test_get_character_returns_dto(): void
@@ -106,10 +108,12 @@ class ClientTest extends TestCase
 
         $result = $this->client->getLocations(1);
 
-        $this->assertArrayHasKey('info', $result);
-        $this->assertArrayHasKey('results', $result);
-        $this->assertEquals(126, $result['info']['count']);
-        $this->assertCount(1, $result['results']);
+        $this->assertArrayHasKey('raw', $result);
+        $this->assertArrayHasKey('data', $result);
+        $this->assertArrayHasKey('info', $result['data']);
+        $this->assertArrayHasKey('results', $result['data']);
+        $this->assertEquals(126, $result['data']['info']['count']);
+        $this->assertCount(1, $result['data']['results']);
     }
 
     public function test_get_episodes_returns_paginated_response(): void
@@ -131,10 +135,12 @@ class ClientTest extends TestCase
 
         $result = $this->client->getEpisodes(1);
 
-        $this->assertArrayHasKey('info', $result);
-        $this->assertArrayHasKey('results', $result);
-        $this->assertEquals(51, $result['info']['count']);
-        $this->assertCount(1, $result['results']);
+        $this->assertArrayHasKey('raw', $result);
+        $this->assertArrayHasKey('data', $result);
+        $this->assertArrayHasKey('info', $result['data']);
+        $this->assertArrayHasKey('results', $result['data']);
+        $this->assertEquals(51, $result['data']['info']['count']);
+        $this->assertCount(1, $result['data']['results']);
     }
 
     public function test_fetch_all_characters_paginates_through_all_pages(): void
@@ -223,7 +229,7 @@ class ClientTest extends TestCase
         $result = $this->client->getCharacters(1);
 
         $this->assertEquals(3, $callCount);
-        $this->assertCount(1, $result['results']);
+        $this->assertCount(1, $result['data']['results']);
     }
 
     public function test_throws_connection_exception_after_max_retries(): void
