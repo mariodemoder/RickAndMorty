@@ -1,0 +1,37 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["AGENT_PROGRAMMING.md"],
+  "agent": {
+    "plan": {
+      "description": "Analyzes code, creates implementation plans, and reviews suggestions without making changes",
+      "mode": "primary",
+      "temperature": 0.1,
+      "permission": {
+        "read": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "list": "allow",
+        "edit": "deny",
+        "bash": "deny",
+        "task": "allow",
+        "webfetch": "allow",
+        "websearch": "allow"
+      }
+    },
+    "build": {
+      "description": "Implements code changes, runs tests, and executes commands with full tool access",
+      "mode": "primary",
+      "permission": {
+        "read": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "list": "allow",
+        "edit": "allow",
+        "bash": "allow",
+        "task": "allow",
+        "webfetch": "allow",
+        "websearch": "allow"
+      }
+    }
+  }
+}
