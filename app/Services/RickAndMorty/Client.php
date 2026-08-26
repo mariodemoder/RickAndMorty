@@ -7,6 +7,7 @@ use App\Services\RickAndMorty\DTOs\EpisodeData;
 use App\Services\RickAndMorty\DTOs\LocationData;
 use App\Services\RickAndMorty\Exceptions\ConnectionException;
 use App\Services\RickAndMorty\Exceptions\InvalidResponseException;
+use App\Services\RickAndMorty\Exceptions\RateLimitException;
 use Illuminate\Http\Client\ConnectionException as LaravelConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Collection;
@@ -114,6 +115,12 @@ class Client
 
             $response = $http->get($url, $params);
 
+            if ($response->status() === 429) {
+                $retryAfter = (int) ($response->header('Retry-After') ?? 1);
+
+                throw new RateLimitException('Rate limited by Rick and Morty API', 429, $retryAfter);
+            }
+
             $this->validateResponse($response, $expectPaginated);
 
             return [
@@ -193,13 +200,34 @@ class Client
 
                     usleep($sleepMs * 1000);
                 }
+            } catch (RateLimitException $e) {
+                $lastException = $e;
+
+                if ($attempt < $this->maxRetries) {
+                    $wait = $e->retryAfter;
+
+                    Log::warning('Rick and Morty API rate limited, waiting...', [
+                        'attempt' => $attempt,
+                        'wait_seconds' => $wait,
+                    ]);
+
+                    sleep($wait);
+                }
             }
         }
 
-        Log::error('Rick and Morty API connection failed after all retries', [
+        Log::error('Rick and Morty API request failed after all retries', [
             'attempts' => $this->maxRetries,
             'error' => $lastException?->getMessage(),
         ]);
+
+        if ($lastException instanceof RateLimitException) {
+            throw new RateLimitException(
+                "Rate limited by Rick and Morty API after {$this->maxRetries} attempts.",
+                429,
+                $lastException->retryAfter,
+            );
+        }
 
         throw new ConnectionException(
             "Failed to connect to Rick and Morty API after {$this->maxRetries} attempts.",

@@ -8,6 +8,7 @@ use App\Services\RickAndMorty\DTOs\EpisodeData;
 use App\Services\RickAndMorty\DTOs\LocationData;
 use App\Services\RickAndMorty\Exceptions\ConnectionException;
 use App\Services\RickAndMorty\Exceptions\InvalidResponseException;
+use App\Services\RickAndMorty\Exceptions\RateLimitException;
 use Illuminate\Http\Client\ConnectionException as LaravelConnectionException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -289,5 +290,42 @@ class ClientTest extends TestCase
         $this->assertEquals('Pilot', $dto->name);
         $this->assertEquals('December 2, 2013', $dto->airDate);
         $this->assertEquals('S01E01', $dto->episodeCode);
+    }
+
+    public function test_retries_on_429_and_succeeds(): void
+    {
+        $callCount = 0;
+
+        Http::fake(function ($request) use (&$callCount) {
+            $callCount++;
+
+            if ($callCount < 3) {
+                return Http::response([], 429, ['Retry-After' => '1']);
+            }
+
+            return Http::response([
+                'info' => ['count' => 1, 'pages' => 1, 'next' => null, 'prev' => null],
+                'results' => [
+                    ['id' => 1, 'name' => 'Rick', 'status' => 'Alive', 'species' => 'Human', 'type' => '', 'gender' => 'Male', 'image' => 'img.jpg', 'origin' => ['url' => ''], 'location' => ['url' => ''], 'episode' => []],
+                ],
+            ], 200);
+        });
+
+        $result = $this->client->getCharacters(1);
+
+        $this->assertEquals(3, $callCount);
+        $this->assertCount(1, $result['data']['results']);
+    }
+
+    public function test_throws_rate_limit_exception_after_max_retries(): void
+    {
+        Http::fake(function () {
+            return Http::response([], 429, ['Retry-After' => '1']);
+        });
+
+        $this->expectException(RateLimitException::class);
+        $this->expectExceptionMessage('Rate limited by Rick and Morty API after 3 attempts.');
+
+        $this->client->getCharacters(1);
     }
 }

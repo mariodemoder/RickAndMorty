@@ -8,7 +8,6 @@ use App\Models\SyncLog;
 use App\Models\SyncRawResponse;
 use App\Services\RickAndMorty\Client;
 use App\Services\RickAndMorty\Helpers\UrlHelper;
-use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -19,7 +18,7 @@ use Illuminate\Support\Facades\Log;
 
 class SyncCharactersJob implements ShouldQueue
 {
-    use Batchable, Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
 
@@ -89,6 +88,10 @@ class SyncCharactersJob implements ShouldQueue
 
             $hasMorePages = $page < $totalPages;
             $page++;
+
+            if ($hasMorePages) {
+                usleep((int) config('rick-and-morty.request_delay_ms', 200) * 1000);
+            }
         }
 
         $count = Character::count();
