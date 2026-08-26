@@ -18,6 +18,16 @@ export default defineConfig({
         },
     },
     server: {
+        proxy: {
+            '/api': {
+                target: 'http://localhost:8080',
+                changeOrigin: true,
+            },
+            '/sanctum': {
+                target: 'http://localhost:8080',
+                changeOrigin: true,
+            },
+        },
         watch: {
             ignored: ['**/storage/framework/views/**'],
         },

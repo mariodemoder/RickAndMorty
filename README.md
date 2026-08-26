@@ -22,119 +22,114 @@ Full-stack application built with **Laravel 12** and **Vue 3** that integrates w
 
 ## Requirements
 
+- Docker & Docker Compose
 - PHP 8.2+
-- MySQL 8.4+
 - Composer
-- Node.js & NPM (for frontend assets)
+- Node.js 18+ & NPM
 
 ## Installation
 
-### Using Laravel Sail (Docker)
+### Step 1: Clone and install dependencies
 
-1. Clone the repository:
 ```bash
 git clone https://github.com/mariodemoder/RickAndMorty.git
 cd RickAndMorty
-```
 
-2. Install dependencies:
-```bash
+# Install PHP dependencies (runs on host)
 composer install
+
+# Install frontend dependencies (runs on host)
 npm install
 ```
 
-3. Create environment file:
+### Step 2: Environment configuration
+
 ```bash
 cp .env.example .env
-```
-
-4. Configure your `.env` file with database credentials:
-```
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=rick_and_morty
-DB_USERNAME=root
-DB_PASSWORD=
-```
-
-5. Generate application key:
-```bash
 php artisan key:generate
 ```
 
-6. Start Sail:
+**For Laravel Sail (Docker):** Open `.env` and uncomment the MySQL lines under `# --- MySQL (Laravel Sail) ---` (DB_CONNECTION, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD).
+
+### Step 3: Start Laravel Sail
+
 ```bash
 ./vendor/bin/sail up -d
 ```
 
-7. Run migrations:
+This starts:
+- **Laravel** at `http://localhost:8080`
+- **MySQL 8.4** at port `3306`
+- **Vite dev server** at `http://localhost:5173`
+
+### Step 4: Run migrations
+
 ```bash
 ./vendor/bin/sail artisan migrate
 ```
 
-8. Install Sanctum:
-```bash
-./vendor/bin/sail artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
-./vendor/bin/sail artisan migrate
-```
+### Step 5: Sync data from Rick & Morty API
 
-### Using Local PHP/MySQL
-
-1. Follow steps 1-4 above
-
-2. Start MySQL (via WampServer, XAMPP, or similar)
-
-3. Create the database:
-```sql
-CREATE DATABASE rick_and_morty;
-```
-
-4. Generate application key:
-```bash
-php artisan key:generate
-```
-
-5. Run migrations:
-```bash
-php artisan migrate
-```
-
-6. Install Sanctum:
-```bash
-php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
-php artisan migrate
-```
-
-## Quick Start
+The sync runs asynchronously via Laravel queues:
 
 ```bash
-# 1. Start containers
-docker compose up -d
+# Dispatch sync job to the queue
+./vendor/bin/sail artisan sync:rick-and-morty
 
-# 2. Run migrations
-docker compose exec laravel.test php artisan migrate
+# In a separate terminal, start the queue worker to process jobs
+./vendor/bin/sail artisan queue:work --sleep=1 --tries=3 --verbose
+```
 
-# 3. Sync data from Rick & Morty API (async via queue)
-docker compose exec laravel.test php artisan sync:rick-and-morty
+Wait 30-60 seconds for the sync to complete. You can monitor progress:
 
-# 4. Start queue worker (in a separate terminal)
-docker compose exec laravel.test php artisan queue:work --sleep=1 --tries=3 --verbose
+```bash
+# Check sync status
+./vendor/bin/sail artisan tinker
+>>> \App\Models\SyncLog::latest()->first()->status;  // "completed" when done
 
-# 5. Start frontend dev server
+# Watch log file
+tail -f storage/logs/sync-*.log
+```
+
+### Step 6: Access the application
+
+- **Frontend SPA:** `http://localhost:8080`
+- **API directly:** `http://localhost:8080/api/characters`
+- **API Documentation (Swagger):** `http://localhost:8080/api/documentation`
+
+## Usage
+
+### Development (full stack)
+
+```bash
+# Terminal 1: Start containers
+./vendor/bin/sail up -d
+
+# Terminal 2: Start queue worker
+./vendor/bin/sail artisan queue:work --sleep=1 --tries=3 --verbose
+
+# Terminal 3: Start Vite dev server (with HMR)
 npm run dev
 ```
 
-## Usage
+> **Note:** When using `npm run dev`, Vite proxies `/api` requests to the Laravel container at `localhost:8080`. Access the app at `http://localhost:5173` for HMR support, or `http://localhost:8080` without HMR.
+
+### Alternative: Quick start script
+
+```bash
+python start-and-restart.py
+```
+
+This script handles everything: Docker startup, npm install, queue worker, sync logs, and Vite dev server.
 
 ### Sync Data from Rick & Morty API
 
 ```bash
 # Dispatch async sync (runs in background via queue)
-php artisan sync:rick-and-morty
+./vendor/bin/sail artisan sync:rick-and-morty
 
 # Start the queue worker to process jobs
-php artisan queue:work --sleep=1 --tries=3 --verbose
+./vendor/bin/sail artisan queue:work --sleep=1 --tries=3 --verbose
 ```
 
 This command:
@@ -151,47 +146,31 @@ This command:
 
 ```bash
 # Reprocess a specific sync run from stored raw responses (no API calls)
-php artisan sync:reprocess {syncLogId}
+./vendor/bin/sail artisan sync:reprocess {syncLogId}
 
 # Reprocess only a specific resource type
-php artisan sync:reprocess {syncLogId} --resource=character
-php artisan sync:reprocess {syncLogId} --resource=location
-php artisan sync:reprocess {syncLogId} --resource=episode
-```
-
-### View Sync Logs
-
-```bash
-# Real-time log monitoring (terminal)
-tail -f storage/logs/sync-*.log
-
-# From tinker (database)
-php artisan tinker
->>> \App\Models\SyncLog::latest()->first();
->>> \App\Models\SyncLog::latest()->first()->entries;
-
-# Check failed jobs
-php artisan queue:failed
-php artisan queue:retry all
+./vendor/bin/sail artisan sync:reprocess {syncLogId} --resource=character
+./vendor/bin/sail artisan sync:reprocess {syncLogId} --resource=location
+./vendor/bin/sail artisan sync:reprocess {syncLogId} --resource=episode
 ```
 
 ### Run Tests
 
 ```bash
 # All tests (118 tests, 519+ assertions)
-php artisan test
+./vendor/bin/sail artisan test
 
 # Unit tests only
-php artisan test --testsuite=Unit
+./vendor/bin/sail artisan test --testsuite=Unit
 
 # Feature tests only
-php artisan test --testsuite=Feature
+./vendor/bin/sail artisan test --testsuite=Feature
 
 # Specific test file
-php artisan test tests/Feature/Api/CharactersTest.php
+./vendor/bin/sail artisan test tests/Feature/Api/CharactersTest.php
 
 # OpenAPI spec validation
-php artisan test --filter=OpenApiTest
+./vendor/bin/sail artisan test --filter=OpenApiTest
 ```
 
 ## API Endpoints
@@ -397,6 +376,52 @@ resources/js/                # Vue.js frontend
 7. **OpenAPI Documentation**: Full API documentation via L5 Swagger with annotated endpoints, response schemas, and automated validation tests (14 tests).
 
 8. **Stateless API**: API endpoints follow REST conventions with proper HTTP status codes and consistent error responses.
+
+## Troubleshooting
+
+### "No data" on the catalog pages
+
+The sync is async and requires a queue worker. Make sure you:
+
+1. Dispatched the sync: `./vendor/bin/sail artisan sync:rick-and-morty`
+2. Started the queue worker: `./vendor/bin/sail artisan queue:work`
+3. Waited 30-60 seconds for processing
+
+```bash
+# Check if sync completed
+./vendor/bin/sail artisan tinker
+>>> \App\Models\SyncLog::latest()->first()->status;
+# Should return "completed"
+
+# Check data counts
+>>> \App\Models\Character::count();  // 826
+>>> \App\Models\Episode::count();    // 51
+>>> \App\Models\Location::count();   // 126
+```
+
+### API returns 404 / Empty results
+
+Ensure migrations ran and sync completed:
+
+```bash
+./vendor/bin/sail artisan migrate
+./vendor/bin/sail artisan sync:rick-and-morty
+# Start worker in separate terminal
+```
+
+### Frontend shows CORS errors
+
+Ensure Vite dev server is running (`npm run dev`) and accessing via `http://localhost:5173`, or access Laravel directly at `http://localhost:8080`.
+
+### Failed jobs
+
+```bash
+# Check failed jobs
+./vendor/bin/sail artisan queue:failed
+
+# Retry all failed jobs
+./vendor/bin/sail artisan queue:retry all
+```
 
 ## AI Agent Tooling
 

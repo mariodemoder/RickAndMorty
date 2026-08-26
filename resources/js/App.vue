@@ -12,7 +12,7 @@ import Navbar from './components/Navbar.vue';
             <p>Rick & Morty Explorer &mdash; Built with Laravel + Vue.js</p>
             <p class="mt-2">
                 <a 
-                    href="http://localhost:8080/api/documentation" 
+                    href="/api/documentation" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     class="text-gray-400 hover:text-white transition-colors underline"
