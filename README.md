@@ -114,13 +114,29 @@ npm run dev
 
 > **Note:** When using `npm run dev`, Vite proxies `/api` requests to the Laravel container at `localhost:8080`. Access the app at `http://localhost:5173` for HMR support, or `http://localhost:8080` without HMR.
 
-### Alternative: Quick start script
+### Alternative: Quick start script (Windows)
 
 ```bash
 python start-and-restart.py
 ```
 
-This script handles everything: Docker startup, npm install, queue worker, sync logs, and Vite dev server.
+This script automates the full setup on Windows (requires Docker Desktop):
+
+1. Starts Docker Desktop (if not running)
+2. Stops any existing containers
+3. Starts MySQL + Laravel containers
+4. Waits for MySQL to be healthy
+5. Runs `composer install` inside the container
+6. Generates APP_KEY
+7. Runs database migrations
+8. Dispatches `sync:rick-and-morty` to the queue
+9. Runs `npm install` inside the container
+10. Opens 3 terminals:
+    - **Queue Worker** — processes sync jobs
+    - **Sync Logs** — tails `storage/logs/sync-*.log`
+    - **Vite Dev Server** — frontend with HMR at `http://localhost:5173`
+
+**Ctrl+C** stops Vite, then the script tears down all containers.
 
 ### Sync Data from Rick & Morty API
 
