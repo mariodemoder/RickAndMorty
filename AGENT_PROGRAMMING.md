@@ -17,7 +17,7 @@ Full-stack app that consumes the [Rick and Morty API](https://rickandmortyapi.co
 
 | Layer | Technology | Version |
 |-------|-----------|---------|
-| Language | PHP | 8.2+ |
+| Language | PHP | 8.4+ |
 | Framework | Laravel | 12.x |
 | DB | MySQL | 8.4 |
 | ORM | Eloquent | — |

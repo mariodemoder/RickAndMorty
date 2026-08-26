@@ -8,7 +8,7 @@ Full-stack application built with **Laravel 12** and **Vue 3** that integrates w
 
 | Layer | Technology | Version |
 |-------|-----------|---------|
-| Language | PHP | 8.2+ |
+| Language | PHP | 8.4+ |
 | Framework | Laravel | 12.x |
 | Database | MySQL | 8.4 |
 | Auth | Laravel Sanctum | 4.3 |
@@ -23,7 +23,7 @@ Full-stack application built with **Laravel 12** and **Vue 3** that integrates w
 ## Requirements
 
 - Docker & Docker Compose
-- PHP 8.2+
+- PHP 8.4+
 - Composer
 - Node.js 18+ & NPM
 

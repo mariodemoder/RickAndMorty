@@ -13,7 +13,7 @@
 
 ## Project
 
-- **Stack:** Laravel 12, PHP 8.2+, MySQL 8.4, Sanctum, Vue 3 (Composition API), Vite 7, Tailwind CSS 4
+- **Stack:** Laravel 12, PHP 8.4+, MySQL 8.4, Sanctum, Vue 3 (Composition API), Vite 7, Tailwind CSS 4
 - **Source:** Rick and Morty API → synced locally → exposed via custom REST API → consumed by Vue SPA
 - **Status:** 12/12 phases completed, 118+ tests passing
 
